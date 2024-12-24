@@ -2,22 +2,63 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 
-const OrderDetailsModal = ({ order, onClose }) => {
+const OrderDetailsModal = ({ order, onClose, onUpdate }) => {
     if (!order) return null;
+
+    const [updatedOrder, setUpdatedOrder] = useState(order);
+
+    const handleUpdate = () => {
+        onUpdate(updatedOrder);
+        onClose();
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                <h2 className="text-xl font-bold mb-4">Order Details</h2>
+                <h2 className="text-xl font-bold mb-4">Update Order</h2>
 
                 <p><strong>ID:</strong> {order.id || "N/A"}</p>
-                <p><strong>Customer Name:</strong> {order.customerName || "N/A"}</p>
-                <p><strong>Order Date:</strong> {new Date(order.orderDate).toLocaleDateString()}</p>
-                <p><strong>Orders:</strong> {order.orders || "N/A"}</p>
-                <p><strong>Ship Address:</strong> {order.Address || "N/A"}</p>
-                <p><strong>Freight:</strong> {order.freight || "N/A"}</p>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Customer Name</label>
+                    <input
+                        value={updatedOrder.customerName || ""}
+                        onChange={(e) => setUpdatedOrder({ ...updatedOrder, customerName: e.target.value })}
+                        type="text"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        placeholder="Enter customer name"
+                        required
+                    />
+                </div>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Orders</label>
+                    <input
+                        value={updatedOrder.orders || ""}
+                        onChange={(e) => setUpdatedOrder({ ...updatedOrder, orders: e.target.value })}
+                        type="text"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        placeholder="Enter orders"
+                        required
+                    />
+                </div>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Address</label>
+                    <input
+                        value={updatedOrder.Address || ""}
+                        onChange={(e) => setUpdatedOrder({ ...updatedOrder, Address: e.target.value })}
+                        type="text"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        placeholder="Enter address"
+                        required
+                    />
+                </div>
                 <button
-                    className="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+                    className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+                    onClick={handleUpdate}
+                >
+                    Update
+                </button>
+                <button
+                    className="mt-4 ml-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
                     onClick={onClose}
                 >
                     Close
@@ -40,6 +81,7 @@ const Table = () => {
             setSelectedOrder(response.data);
         });
     }
+
     function handleDelete(id) {
         async function deleteOrder(id) {
             await axios.delete("http://localhost:3000/orders/" + id)
@@ -64,7 +106,6 @@ const Table = () => {
                 });
             }
         });
-
     }
 
     function getDatas() {
@@ -80,13 +121,14 @@ const Table = () => {
                 setLoading(false);
             });
     }
+
     function handleSumit(e) {
         e.preventDefault();
         const newOrder = {
             customerName: newCustomerName,
             orders: newOrderName,
             Address: newAddress,
-            orderDate: new Date().toISOString(), // Varsayılan olarak bugünün tarihi
+            orderDate: new Date().toISOString(), // Varsayılan olaraq bugünün tarihi
         };
 
         axios
@@ -112,6 +154,29 @@ const Table = () => {
             });
     }
 
+    function handleUpdateOrder(updatedOrder) {
+        axios
+            .put("http://localhost:3000/orders/" + updatedOrder.id, updatedOrder)
+            .then((response) => {
+                const updatedOrders = orders.map(order =>
+                    order.id === updatedOrder.id ? updatedOrder : order
+                );
+                setOrders(updatedOrders);
+                Swal.fire({
+                    title: "Updated!",
+                    text: "The order has been updated.",
+                    icon: "success"
+                });
+            })
+            .catch((error) => {
+                console.error("Error updating order:", error);
+                Swal.fire({
+                    title: "Error!",
+                    text: "There was a problem updating the order.",
+                    icon: "error"
+                });
+            });
+    }
 
     useEffect(() => {
         getDatas();
@@ -124,13 +189,10 @@ const Table = () => {
     return (
         <>
             <form className="bg-white p-6 rounded-lg shadow-md max-w-md mx-auto" onSubmit={(e) => handleSumit(e)}>
-                <h1 class="text-3xl font-semibold text-gray-800 mt-4 mb-6 shadow-md">Add Order</h1>
+                <h1 className="text-3xl font-semibold text-gray-800 mt-4 mb-6 shadow-md">Add Order</h1>
 
                 <div className="mb-4">
-                    <label
-                        htmlFor="name"
-                        className="block text-sm font-medium text-gray-700"
-                    >
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                         Customer Name
                     </label>
                     <input
@@ -145,10 +207,7 @@ const Table = () => {
                     />
                 </div>
                 <div className="mb-4">
-                    <label
-                        htmlFor="orders"
-                        className="block text-sm font-medium text-gray-700"
-                    >
+                    <label htmlFor="orders" className="block text-sm font-medium text-gray-700">
                         Orders
                     </label>
                     <input
@@ -163,10 +222,7 @@ const Table = () => {
                     />
                 </div>
                 <div className="mb-4">
-                    <label
-                        htmlFor="address"
-                        className="block text-sm font-medium text-gray-700"
-                    >
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700">
                         Address
                     </label>
                     <input
@@ -214,24 +270,35 @@ const Table = () => {
                                     >
                                         Order Details
                                     </button>
-  
                                 </td>
-                                <td><button className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                                    Update
-                                </button></td>
-                                <td><button
-                                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-300"
-                                    onClick={() => handleDelete(order.id)}>
-                                    Delete
-                                </button></td>
+                                <td>
+                                    <button
+                                        className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        onClick={() => handleGetOrderById(order.id)}
+                                    >
+                                        Update
+                                    </button>
+                                </td>
+                                <td>
+                                    <button
+                                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-300"
+                                        onClick={() => handleDelete(order.id)}>
+                                        Delete
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
                 {selectedOrder && (
-                    <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
+                    <OrderDetailsModal
+                        order={selectedOrder}
+                        onClose={() => setSelectedOrder(null)}
+                        onUpdate={handleUpdateOrder}
+                    />
                 )}
-            </div></>
+            </div>
+        </>
     );
 };
 
